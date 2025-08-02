@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Reviewer Dashboard</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/reviewer1.css') }}">
+</head>
+
+<body>
+  <nav class="navbar">
+    <div class="nav-left">
+      <img src="https://companieslogo.com/img/orig/NMDC.NS-b66af539.png?t=1745584683" alt="nmdc logo" class="nav-logo" />
+      <span class="welcome">Welcome, {{ user }} </span>
+
+      <!-- Search Form -->
+      <form method="POST" id="searchForm" style="display: inline-flex; align-items: center;">
+        <!-- Normal search input -->
+        <input type="text" id="searchInput" name="search_value" placeholder="Search..." />
+
+        <!-- Filter dropdown -->
+        <select id="filterType" name="filter_type">
+          <option value="" disabled selected hidden>Filter</option>
+          <option value="emp_name">Name</option>
+          <option value="emp_id">Employee ID</option>
+          <option value="sap_id">SAP ID</option>
+          <option value="department">Department</option>
+          <option value="training_date">Training Date</option>
+          <option value="training_name">Training Name</option>
+          <option value="due">Due</option>
+        </select>
+
+        <!-- Extra filters -->
+        <div id="extraFilters">
+          <!-- Department filter -->
+          <select id="departmentSelect" name="department" class="hidden">
+            {% for dept in departments %}
+            <option value="{{ dept }}">{{ dept }}</option>
+            {% endfor %}
+          </select>
+
+          <!-- Training date filter -->
+          <div id="dateInputs" class="hidden" style="gap: 5px;">
+            <input type="date" id="joiningDate" name="joining_date">
+            <input type="date" id="completionDate" name="completion_date">
+          </div>
+        </div>
+
+        <button id="searchBtn" type="submit" title="Search">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </button>
+      </form>
+
+      <!-- Navigation Menu -->
+      <div class="nav-menu">
+        <button class="menu-btn">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="menu-content hidden">
+          <a href="#" id="downloadBtn">Download</a>
+          <a href="#" id="verifyBtn">Verification</a>
+          <a href="{{ url_for('add_trainee') }}" id="listBtn">Add Trainee</a>
+          <a href="{{ url_for('logout') }}" id="logoutBtn">Logout</a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div id="results">
+    {% if results %}
+    <table>
+      <thead>
+        <tr>
+          {% for col in results[0].keys() %}
+          <th>{{ col }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in results %}
+        <tr>
+          {% for val in row.values() %}
+          <td>{{ val }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+
+  <script>
+    const filterType = document.getElementById('filterType');
+    const searchInput = document.getElementById('searchInput');
+    const departmentSelect = document.getElementById('departmentSelect');
+    const dateInputs = document.getElementById('dateInputs');
+
+    filterType.addEventListener('change', function () {
+      // Hide all extra filters first
+      departmentSelect.classList.add('hidden');
+      dateInputs.classList.add('hidden');
+      searchInput.style.display = 'inline-block';
+
+      if (this.value === 'department') {
+        departmentSelect.classList.remove('hidden');
+      } 
+      else if (this.value === 'training_date') {
+        searchInput.style.display = 'none'; // Hide normal search
+        dateInputs.classList.remove('hidden'); // Show date pickers
+      }
+      else if (this.value === 'due') {
+        searchInput.style.display = 'none'; // No search for due
+        document.getElementById('searchForm').submit(); // Auto-submit
+      }
+    });
+  // Navigation menu toggle
+  document.querySelector('.menu-btn').addEventListener('click', function () {
+    document.querySelector('.menu-content').classList.toggle('hidden');
+  });
+  </script>
+</body>
+</html>

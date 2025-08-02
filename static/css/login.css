@@ -1,0 +1,39 @@
+*{
+    font-family: Georgia, 'Times New Roman', Times, serif;
+}
+body{
+    margin: 0px;
+    height:100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color:rgb(180, 227, 246);
+}
+.login-container{
+    padding:20px;
+    border-radius: 10px;
+    box-shadow:0 4px 12px rgba(0,0,0,0.1);
+    text-align: center;
+    width:300px;
+    background-color: white;
+}
+#logo{
+    width:250px;
+    height:auto;
+    margin-bottom: 0px;
+}
+.login-container form,
+.login-container input{
+    display: inline;
+    border-radius: 5px;
+    border-width: 1px;
+    width:150px;
+    height:20px;
+
+}
+#login{
+    width:100px;
+    height:20px;
+    background-color:rgb(180, 227, 246);
+    cursor: pointer;
+}

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+
+<body>
+  <div class="login-container"><img src="https://www.nmdc.co.in/assets/images/logo.png" alt="nmdc logo" id="logo" />
+    <h2>Login</h2>
+    <form method="POST">
+      <input type="text" name="username" placeholder="Username" class="{{ 'error-input' if error else '' }}"
+        required><br><br>
+      <input type="password" name="password" placeholder="Password" class="{{ 'error-input' if error else '' }}"
+        required><br><br>
+      <input type="submit" value="Login" id="login">
+    </form>
+  </div>
+</body>
+
+</html>
