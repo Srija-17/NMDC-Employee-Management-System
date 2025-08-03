@@ -108,7 +108,8 @@ def manage_training():
             t.training_name AS 'Training Name',
             tr.scheduled_date AS 'Scheduled Date',
             tr.joining_date AS 'Joining Date',
-            tr.completion_date AS 'Completion Date'
+            tr.completion_date AS 'Completion Date',
+            tr.status AS 'Status'
         FROM trainee tr
         JOIN employee e ON tr.emp_id = e.emp_id
         JOIN training t ON tr.training_id = t.training_id
