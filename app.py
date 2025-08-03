@@ -192,6 +192,70 @@ def update_training_bulk():
     except Exception as e:
         conn.rollback()
         return {"success": False, "message": str(e)}, 500
+@app.route('/manage_user', methods=['GET'])
+def manage_user():
+    cursor = conn.cursor()
+
+    query = """
+        SELECT user_id AS 'User ID',
+               username AS 'Username',
+               password AS 'Password',
+               role AS 'Role'
+        FROM user
+        WHERE 1=1
+    """
+
+    filter_type = request.args.get('filter_type')
+    search_value = request.args.get('search_value')
+
+    if filter_type and search_value:
+        if filter_type in ["username", "role"]:
+            query += f" AND {filter_type} LIKE %s"
+            search_value = f"%{search_value}%"
+
+    query += " ORDER BY username ASC"
+
+    if filter_type and search_value:
+        cursor.execute(query, (search_value,))
+    else:
+        cursor.execute(query)
+
+    users = cursor.fetchall()
+    cursor.close()
+
+    return render_template(
+        'manage_user.html',
+        users=users,
+        user=session.get('username')
+    )
+
+
+@app.route('/update_users_bulk', methods=['POST'])
+def update_users_bulk():
+    data = request.json
+    cursor = conn.cursor()
+
+    try:
+        for row in data:
+            sql = """
+                UPDATE user
+                SET username = %s,
+                    password = %s,
+                    role = %s
+                WHERE user_id = %s
+            """
+            cursor.execute(sql, (
+                row.get('username'),
+                row.get('password'),
+                row.get('role'),
+                row['user_id']
+            ))
+
+        conn.commit()
+        return {"success": True, "message": "Users updated successfully"}
+    except Exception as e:
+        conn.rollback()
+        return {"success": False, "message": str(e)}, 500
 
 @app.route('/reviewer_one', methods=['GET', 'POST'])
 def reviewer_one():
