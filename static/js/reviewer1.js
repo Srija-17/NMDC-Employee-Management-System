@@ -1,65 +1,67 @@
 window.addEventListener('DOMContentLoaded', function () {
+  const filterTypeEl = document.getElementById('filterType');
+  const searchInput = document.getElementById('searchInput');
+  const departmentSelect = document.getElementById('departmentSelect');
+  const dateInputs = document.getElementById('dateInputs');
 
-  document.querySelector('.menu-btn').addEventListener('click', function () {
-  document.querySelector('.menu-content').classList.toggle('hidden');
-});
-
+  // Show/hide fields based on filter
   function toggleExtraInputs() {
-    const filter = document.getElementById('filterType').value;
-    document.getElementById('departmentSelect').classList.add('hidden');
-    document.getElementById('dateInputs').classList.add('hidden');
+    searchInput.style.display = 'inline-block'; // default show
+    departmentSelect.style.display = 'none';
+    dateInputs.style.display = 'none';
 
-    if (filter === 'department') {
-      document.getElementById('departmentSelect').classList.remove('hidden');
-    } else if (filter === 'training_date') {
-      document.getElementById('dateInputs').classList.remove('hidden');
+    if (filterTypeEl.value === 'department') {
+      searchInput.style.display = 'none';
+      departmentSelect.style.display = 'inline-block';
+    }
+    else if (filterTypeEl.value === 'training_date') {
+      searchInput.style.display = 'none';
+      dateInputs.style.display = 'flex';
+    }
+    else if (filterTypeEl.value === 'due') {
+      searchInput.style.display = 'none';
     }
   }
 
-  document.getElementById('filterType').addEventListener('change', function () {
-  const filter = this.options[this.selectedIndex].text;
-  const searchInput = document.getElementById('searchInput');
+  // Event: filter change
+  filterTypeEl.addEventListener('change', function () {
+    toggleExtraInputs();
+    if (this.value === 'due') {
+      searchData();
+    }
+  });
 
-  if (this.value !== 'department' && this.value !== 'training_date') {
-    searchInput.placeholder = `Search by ${filter}...`;
-    searchInput.classList.remove('hidden');
-  } else {
-    searchInput.placeholder = '';
-    searchInput.classList.add('hidden');
-  }
+  // Auto-search on department select
+  departmentSelect.addEventListener('change', function () {
+    if (filterTypeEl.value === 'department') {
+      searchData();
+    }
+  });
 
-  toggleExtraInputs(); // now it's safe to call because it's in scope
-});
-
+  // Search function
   function searchData() {
     const form = document.createElement('form');
     form.method = 'POST';
     form.action = '/reviewer_one';
 
-    const filterType = document.getElementById('filterType').value;
-    const filterInput = document.createElement('input');
-    filterInput.type = 'hidden';
-    filterInput.name = 'filter_type';
-    filterInput.value = filterType;
-    form.appendChild(filterInput);
+    form.appendChild(makeHidden('filter_type', filterTypeEl.value));
 
-    if (filterType === 'department') {
-      const dept = document.getElementById('departmentSelect').value;
-      form.appendChild(makeHidden('search_value', dept));
-    } else if (filterType === 'training_date') {
-      const jd = document.getElementById('joiningDate').value;
-      const cd = document.getElementById('completionDate').value;
-      form.appendChild(makeHidden('joining_date', jd));
-      form.appendChild(makeHidden('completion_date', cd));
-    } else {
-      const val = document.getElementById('searchInput').value;
-      form.appendChild(makeHidden('search_value', val));
+    if (filterTypeEl.value === 'department') {
+      form.appendChild(makeHidden('search_value', departmentSelect.value));
+    }
+    else if (filterTypeEl.value === 'training_date') {
+      form.appendChild(makeHidden('joining_date', document.getElementById('joiningDate').value));
+      form.appendChild(makeHidden('completion_date', document.getElementById('completionDate').value));
+    }
+    else if (filterTypeEl.value !== 'due') {
+      form.appendChild(makeHidden('search_value', searchInput.value));
     }
 
     document.body.appendChild(form);
     form.submit();
   }
 
+  // Create hidden input
   function makeHidden(name, value) {
     const input = document.createElement('input');
     input.type = 'hidden';
@@ -68,16 +70,15 @@ window.addEventListener('DOMContentLoaded', function () {
     return input;
   }
 
+  // CSV Download
   function downloadCSV() {
     const rows = [...document.querySelectorAll("table tbody tr")].map(row =>
       [...row.querySelectorAll("td")].map(td => td.innerText)
     );
-
     if (rows.length === 0) {
       alert("No data to download.");
       return;
     }
-
     const headers = [...document.querySelectorAll("table thead th")].map(th => th.innerText);
     const data = rows.map(row => Object.fromEntries(headers.map((key, i) => [key, row[i]])));
 
@@ -95,29 +96,15 @@ window.addEventListener('DOMContentLoaded', function () {
     });
   }
 
+  // Logout
   function logout() {
     window.location.href = '/logout';
-  }
-  function logout() {
-    window.location.href = "/logout";
   }
 
   document.getElementById('searchBtn').addEventListener('click', searchData);
   document.getElementById('downloadBtn').addEventListener('click', downloadCSV);
   document.getElementById('logoutBtn').addEventListener('click', logout);
-});
-document.addEventListener("DOMContentLoaded", function () {
-    const filterType = document.getElementById("filterType");
-    const searchInput = document.getElementById("searchInput");
-    const extraFilters = document.getElementById("extraFilters");
 
-    filterType.addEventListener("change", function () {
-        if (this.value === "due") {
-            searchInput.style.display = "none";  // Hide search box
-            extraFilters.style.display = "none"; // Hide extra filters
-        } else {
-            searchInput.style.display = "inline-block"; // Show search box
-            extraFilters.style.display = "block";       // Show extra filters
-        }
-    });
+  // Initial state
+  toggleExtraInputs();
 });

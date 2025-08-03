@@ -173,7 +173,6 @@ def reviewer_one():
 
     search_results = []
 
-    # Base query with proper joins
     base_query = """
         SELECT 
             e.emp_id,
@@ -193,45 +192,45 @@ def reviewer_one():
         WHERE 1=1
     """
 
-    if request.method == 'POST':
-        filters = []
+    params = []
 
+    if request.method == 'POST':
         filter_type = request.form.get('filter_type')
         search_value = request.form.get('search_value')
 
         if filter_type == 'emp_name':
-            filters.append(f"AND e.emp_name LIKE '%{search_value}%'")
+            base_query += " AND e.emp_name LIKE %s"
+            params.append(f"%{search_value}%")
         elif filter_type == 'emp_id':
-            filters.append(f"AND e.emp_id = '{search_value}'")
+            base_query += " AND e.emp_id = %s"
+            params.append(search_value)
         elif filter_type == 'sap_id':
-            filters.append(f"AND e.sap_id = '{search_value}'")
+            base_query += " AND e.sap_id = %s"
+            params.append(search_value)
         elif filter_type == 'department':
-            filters.append(f"AND d.dept_name = '{search_value}'")
+            dept_value = request.form.get('department') or search_value
+            if dept_value:
+                base_query += " AND d.dept_name = %s"
+                params.append(dept_value)
         elif filter_type == 'training_name':
-            filters.append(f"AND tr.training_name LIKE '%{search_value}%'")
+            base_query += " AND tr.training_name LIKE %s"
+            params.append(f"%{search_value}%")
         elif filter_type == 'training_date':
             join_date = request.form.get('joining_date')
             comp_date = request.form.get('completion_date')
             if join_date and comp_date:
-                filters.append(f"""
-                    AND tn.joining_date <= '{comp_date}'
-                    AND tn.completion_date >= '{join_date}'
-                """)
-
+                base_query += " AND tn.joining_date <= %s AND tn.completion_date >= %s"
+                params.extend([comp_date, join_date])
         elif filter_type == 'due':
-            filters.append("""
+            base_query += """
                 AND DATE_ADD(tn.completion_date, INTERVAL tr.period YEAR)
                 BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
-            """)
+            """
 
-        
-        final_query = base_query + " " + " ".join(filters)
+    base_query += " ORDER BY e.emp_name ASC"
 
-        # Debug print (optional)
-        print("Executing SQL:", final_query)
-
-        cursor.execute(final_query)
-        search_results = cursor.fetchall()
+    cursor.execute(base_query, tuple(params))
+    search_results = cursor.fetchall()
 
     return render_template(
         'reviewer1_dashboard.html',
@@ -256,9 +255,6 @@ def download():
     output.seek(0)
 
     return send_file(output, mimetype='text/csv', as_attachment=True, download_name='results.csv')
-
-from flask import Flask, render_template, request, redirect, url_for, flash
-import pymysql
 
 @app.route('/add_trainee', methods=['GET', 'POST'])
 def add_trainee():
@@ -298,8 +294,6 @@ def add_trainee():
                            employees=employees,
                            trainings=trainings,
                            error_message=error_message)
-
-
 @app.route('/check_employee/<emp_id>')
 def check_employee(emp_id):
     cursor = conn.cursor()

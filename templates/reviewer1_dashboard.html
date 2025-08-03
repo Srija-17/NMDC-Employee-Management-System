@@ -6,6 +6,11 @@
   <title>Reviewer Dashboard</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/reviewer1.css') }}">
+  <style>
+    .hidden {
+      display: none !important;
+    }
+  </style>
 </head>
 
 <body>
@@ -28,7 +33,7 @@
           <option value="department">Department</option>
           <option value="training_date">Training Date</option>
           <option value="training_name">Training Name</option>
-          <option value="due">Due</option>
+          <option value="due">Due Next Month</option>
         </select>
 
         <!-- Extra filters -->
@@ -97,27 +102,59 @@
     const dateInputs = document.getElementById('dateInputs');
 
     filterType.addEventListener('change', function () {
-      // Hide all extra filters first
+      // Hide all by default
+      searchInput.classList.remove('hidden');
       departmentSelect.classList.add('hidden');
       dateInputs.classList.add('hidden');
-      searchInput.style.display = 'inline-block';
 
       if (this.value === 'department') {
+        searchInput.classList.add('hidden');
         departmentSelect.classList.remove('hidden');
-      } 
+      }
       else if (this.value === 'training_date') {
-        searchInput.style.display = 'none'; // Hide normal search
-        dateInputs.classList.remove('hidden'); // Show date pickers
+        searchInput.classList.add('hidden');
+        dateInputs.classList.remove('hidden');
       }
       else if (this.value === 'due') {
-        searchInput.style.display = 'none'; // No search for due
-        document.getElementById('searchForm').submit(); // Auto-submit
+        searchInput.classList.add('hidden');
+        document.getElementById('searchForm').submit();
       }
     });
-  // Navigation menu toggle
-  document.querySelector('.menu-btn').addEventListener('click', function () {
-    document.querySelector('.menu-content').classList.toggle('hidden');
-  });
+
+    // Navigation menu toggle
+    document.querySelector('.menu-btn').addEventListener('click', function () {
+      document.querySelector('.menu-content').classList.toggle('hidden');
+    });
+
+    // Download table data as CSV
+    document.getElementById('downloadBtn').addEventListener('click', function (e) {
+      e.preventDefault();
+
+      const table = document.querySelector("#results table");
+      if (!table) {
+        alert("No data to download.");
+        return;
+      }
+
+      let csv = [];
+      const rows = table.querySelectorAll("tr");
+
+      rows.forEach(row => {
+        const cols = row.querySelectorAll("th, td");
+        const rowData = [];
+        cols.forEach(col => rowData.push('"' + col.innerText.replace(/"/g, '""') + '"'));
+        csv.push(rowData.join(","));
+      });
+
+      const blob = new Blob([csv.join("\n")], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.setAttribute("href", url);
+      a.setAttribute("download", "results.csv");
+      a.click();
+      window.URL.revokeObjectURL(url);
+    });
   </script>
 </body>
 </html>
