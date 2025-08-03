@@ -131,20 +131,21 @@ def manage_training():
             t.training_name AS 'Training Name',
             tr.scheduled_date AS 'Scheduled Date',
             tr.joining_date AS 'Joining Date',
-            tr.completion_date AS 'Completion Date'
+            tr.completion_date AS 'Completion Date',
+            tr.status AS 'Status'
         FROM trainee tr
         JOIN employee e ON tr.emp_id = e.emp_id
         JOIN training t ON tr.training_id = t.training_id
         WHERE 1=1
     """
 
-    # Filters from GET parameters
     filter_type = request.args.get('filter_type')
     search_value = request.args.get('search_value')
 
     if filter_type and search_value:
         if filter_type in ["emp_name", "emp_id", "sap_id", "training_name", "training_id"]:
-            query += f" AND { 'e.' if filter_type.startswith('emp') or filter_type == 'sap_id' else 't.'}{filter_type} LIKE %s"
+            table_alias = 'e.' if filter_type.startswith('emp') or filter_type == 'sap_id' else 't.'
+            query += f" AND {table_alias}{filter_type} LIKE %s"
             search_value = f"%{search_value}%"
 
     query += " ORDER BY e.emp_name ASC"
@@ -158,10 +159,39 @@ def manage_training():
     cursor.close()
 
     return render_template(
-        'admin_dashboard.html',  # Reuse the same HTML
+        'admin_dashboard.html',
         results=results,
         user=session.get('username')
     )
+@app.route('/update_training_bulk', methods=['POST'])
+def update_training_bulk():
+    data = request.json
+    cursor = conn.cursor()
+
+    try:
+        for row in data:
+            sql = """
+                UPDATE trainee
+                SET scheduled_date = %s,
+                    joining_date = %s,
+                    completion_date = %s,
+                    status = %s
+                WHERE emp_id = %s AND training_id = %s
+            """
+            cursor.execute(sql, (
+                row.get('scheduled_date') or None,
+                row.get('joining_date') or None,
+                row.get('completion_date') or None,
+                row.get('status'),  # active/inactive
+                row['emp_id'],
+                row['training_id']
+            ))
+
+        conn.commit()
+        return {"success": True, "message": "Training records updated successfully"}
+    except Exception as e:
+        conn.rollback()
+        return {"success": False, "message": str(e)}, 500
 
 @app.route('/reviewer_one', methods=['GET', 'POST'])
 def reviewer_one():

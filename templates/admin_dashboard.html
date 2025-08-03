@@ -7,55 +7,34 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
     <script src="{{ url_for('static', filename='js/admin.js') }}" defer></script>
-    <style>
-        /* Search Navigation Bar */
-        .search-navbar {
-            background: #ffffff;
-            border-bottom: 1px solid #ddd;
-            padding: 10px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .search-navbar select,
-        .search-navbar input {
-            padding: 6px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-
-        .search-navbar button {
-            padding: 6px 12px;
-            background: #4CAF50;
-            border: none;
-            color: white;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-
-        .search-navbar button:hover {
-            background: #45a049;
-        }
-    </style>
 </head>
 
 <body>
 
     <div class="sidebar">
         <div class="logo-container">
-            <img src="https://companieslogo.com/img/orig/NMDC.NS-b66af539.png?t=1745584683" alt="NMDC Logo" class="logo">
+            <img src="https://companieslogo.com/img/orig/NMDC.NS-b66af539.png?t=1745584683" alt="NMDC Logo"
+                class="logo">
             <h2>Admin</h2>
         </div>
         <ul class="menu">
-            <li><a href="{{ url_for('admin_dashboard') }}" class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
-                <i class="fa-solid fa-list"></i> Report</a>
+            <li>
+                <a href="{{ url_for('admin_dashboard') }}"
+                    class="{% if request.endpoint == 'admin_dashboard' %}active{% endif %}">
+                    <i class="fa-solid fa-list"></i> Report
+                </a>
             </li>
-            <li><a href="{{ url_for('manage_employee') }}" class="{% if request.endpoint == 'manage_employee' %}active{% endif %}">
-                <i class="fa-solid fa-users"></i> Manage Employee</a>
+            <li>
+                <a href="{{ url_for('manage_employee') }}"
+                    class="{% if request.endpoint == 'manage_employee' %}active{% endif %}">
+                    <i class="fa-solid fa-users"></i> Manage Employee
+                </a>
             </li>
-            <li><a href="{{ url_for('manage_training') }}" class="{% if request.endpoint == 'manage_training' %}active{% endif %}">
-                <i class="fa-solid fa-chalkboard-user"></i> Manage Training</a>
+            <li>
+                <a href="{{ url_for('manage_training') }}"
+                    class="{% if request.endpoint == 'manage_training' %}active{% endif %}">
+                    <i class="fa-solid fa-chalkboard-user"></i> Manage Training
+                </a>
             </li>
             <li><a href="#" id="downloadBtn"><i class="fa-solid fa-download"></i> Download</a></li>
             <li><a href="{{ url_for('logout') }}"><i class="fa-solid fa-right-from-bracket"></i> Logout</a></li>
@@ -74,42 +53,68 @@
         </header>
 
         {% if request.endpoint == 'manage_training' %}
-        <!-- Search Navigation Bar -->
-        <form method="GET" action="{{ url_for('manage_training') }}" class="search-navbar">
-            <select name="filter_type">
-                <option value="">-- Select Filter --</option>
-                <option value="emp_id" {% if request.args.get('filter_type') == 'emp_id' %}selected{% endif %}>Employee ID</option>
-                <option value="sap_id" {% if request.args.get('filter_type') == 'sap_id' %}selected{% endif %}>SAP ID</option>
-                <option value="emp_name" {% if request.args.get('filter_type') == 'emp_name' %}selected{% endif %}>Employee Name</option>
-                <option value="training_id" {% if request.args.get('filter_type') == 'training_id' %}selected{% endif %}>Training ID</option>
-                <option value="training_name" {% if request.args.get('filter_type') == 'training_name' %}selected{% endif %}>Training Name</option>
-            </select>
+        <!-- Search + Edit/Save Navigation Bar -->
+        <div class="search-navbar" style="display: flex; align-items: center; gap: 10px; margin-bottom: 15px;">
+            <form method="GET" action="{{ url_for('manage_training') }}"
+                style="display: flex; gap: 10px; flex-grow: 1;">
+                <select name="filter_type">
+                    <option value="">-- Select Filter --</option>
+                    <option value="emp_id" {% if request.args.get('filter_type')=='emp_id' %}selected{% endif %}>
+                        Employee ID</option>
+                    <option value="sap_id" {% if request.args.get('filter_type')=='sap_id' %}selected{% endif %}>SAP ID
+                    </option>
+                    <option value="emp_name" {% if request.args.get('filter_type')=='emp_name' %}selected{% endif %}>
+                        Employee Name</option>
+                    <option value="training_id" {% if request.args.get('filter_type')=='training_id' %}selected{% endif
+                        %}>Training ID</option>
+                    <option value="training_name" {% if request.args.get('filter_type')=='training_name' %}selected{%
+                        endif %}>Training Name</option>
+                </select>
 
-            <input type="text" name="search_value" placeholder="Enter search value"
-                value="{{ request.args.get('search_value', '') }}">
+                <input type="text" name="search_value" placeholder="Enter search value"
+                    value="{{ request.args.get('search_value', '') }}">
 
-            <button type="submit">Search</button>
-        </form>
+                <button type="submit">Search</button>
+            </form>
+
+            <button id="editBtn"
+                style="background: orange; padding: 6px 12px; border: none; color: white; border-radius: 4px;">Edit</button>
+            <button id="saveBtn"
+                style="background: green; padding: 6px 12px; border: none; color: white; border-radius: 4px;"
+                disabled>Save</button>
+        </div>
         {% endif %}
 
         <!-- Table -->
         <div id="results">
             {% if results %}
-            <table>
+            <table id="trainingTable">
                 <thead>
                     <tr>
                         {% for col in results[0].keys() %}
-                            <th>{{ col }}</th>
+                        <th>{{ col }}</th>
                         {% endfor %}
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in results %}
-                        <tr>
-                            {% for val in row.values() %}
-                                <td>{{ val }}</td>
-                            {% endfor %}
-                        </tr>
+                    <tr>
+                        {% for key, val in row.items() %}
+                        {% if key in ["Scheduled Date", "Joining Date", "Completion Date"] %}
+                        <td><input type="date" value="{{ val }}" disabled></td>
+                        {% elif key == "Status" %}
+                        <td>
+                            <select disabled>
+                                <option value="active" {% if val=="active" %}selected{% endif %}>Active</option>
+                                <option value="inactive" {% if val=="inactive" %}selected{% endif %}>Inactive</option>
+                            </select>
+                        </td>
+
+                        {% else %}
+                        <td>{{ val }}</td>
+                        {% endif %}
+                        {% endfor %}
+                    </tr>
                     {% endfor %}
                 </tbody>
             </table>

@@ -107,3 +107,49 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
 });
+document.addEventListener("DOMContentLoaded", () => {
+    const editBtn = document.getElementById("editBtn");
+    const saveBtn = document.getElementById("saveBtn");
+    const table = document.getElementById("trainingTable");
+
+    if (editBtn && saveBtn && table) {
+        editBtn.addEventListener("click", () => {
+            table.querySelectorAll("input, select").forEach(el => {
+                el.disabled = false;
+            });
+            saveBtn.disabled = false;
+            editBtn.disabled = true;
+        });
+
+        saveBtn.addEventListener("click", () => {
+            let updates = [];
+            table.querySelectorAll("tbody tr").forEach(row => {
+                let cells = row.querySelectorAll("td");
+                updates.push({
+                    emp_id: cells[0].innerText.trim(),
+                    training_id: cells[3].innerText.trim(),
+                    scheduled_date: cells[5].querySelector("input").value || null,
+                    joining_date: cells[6].querySelector("input").value || null,
+                    completion_date: cells[7].querySelector("input").value || null,
+                    status: cells[8].querySelector("select").value
+                });
+            });
+
+            fetch("/update_training_bulk", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(updates)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("Changes saved successfully!");
+                    location.reload();
+                } else {
+                    alert("Error: " + data.message);
+                }
+            })
+            .catch(err => alert("Request failed: " + err));
+        });
+    }
+});
