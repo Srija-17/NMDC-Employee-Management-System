@@ -108,3 +108,9 @@ th {
     font-weight: bold;
     color: gray;
 }
+#editBtn{
+    cursor: pointer;
+}
+#saveBtn{
+    cursor: pointer;
+}

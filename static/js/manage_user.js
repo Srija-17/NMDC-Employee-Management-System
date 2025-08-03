@@ -6,32 +6,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const table = document.querySelector("#usersTable");
     const downloadBtn = document.getElementById("downloadBtn");
 
-    const filterType = document.getElementById("filterType");
-    const searchInput = document.getElementById("searchInput");
-    const roleDropdown = document.getElementById("roleDropdown");
-
-    // Show correct search box based on selected filter on load
-    if (filterType.value === "role") {
-        searchInput.style.display = "none";
-        roleDropdown.style.display = "inline-block";
-    } else {
-        searchInput.style.display = "inline-block";
-        roleDropdown.style.display = "none";
-    }
-
-    // Switch between search input and role dropdown instantly
-    filterType.addEventListener("change", () => {
-        if (filterType.value === "role") {
-            searchInput.style.display = "none";
-            roleDropdown.style.display = "inline-block";
-            searchInput.value = ""; // clear text search when switching
-        } else {
-            searchInput.style.display = "inline-block";
-            roleDropdown.style.display = "none";
-            roleDropdown.value = ""; // clear role selection
-        }
-    });
-
     // Toggle edit mode
     editBtn.addEventListener("click", () => {
         const inputs = table.querySelectorAll("input, select");
@@ -55,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
 
-        fetch("/update_users", {
+        fetch("/update_users_bulk", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(updatedData)
@@ -68,22 +42,28 @@ document.addEventListener("DOMContentLoaded", () => {
         .catch(err => console.error(err));
     });
 
-    // Download table as CSV
+    // Download only visible table rows
     if (downloadBtn) {
         downloadBtn.addEventListener("click", (e) => {
             e.preventDefault();
-            if (!table) {
+            if (!table || table.querySelectorAll("tbody tr").length === 0) {
                 alert("No data to download!");
                 return;
             }
 
             let csv = [];
-            const rows = table.querySelectorAll("tr");
 
-            rows.forEach(row => {
-                const cols = row.querySelectorAll("th, td");
+            // Table header
+            let headerRow = [];
+            table.querySelectorAll("thead th").forEach(th => {
+                headerRow.push(`"${th.innerText.trim()}"`);
+            });
+            csv.push(headerRow.join(","));
+
+            // Only visible rows
+            table.querySelectorAll("tbody tr").forEach(row => {
                 let rowData = [];
-                cols.forEach(col => {
+                row.querySelectorAll("td").forEach(col => {
                     if (col.querySelector("input")) {
                         rowData.push(`"${col.querySelector("input").value}"`);
                     } else if (col.querySelector("select")) {
@@ -95,11 +75,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 csv.push(rowData.join(","));
             });
 
+            // Create CSV
             const csvBlob = new Blob([csv.join("\n")], { type: "text/csv" });
             const url = URL.createObjectURL(csvBlob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = "manage_users.csv";
+            a.download = "manage_users_filtered.csv";
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
