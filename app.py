@@ -53,38 +53,111 @@ def logout():
     session.clear()  # Clears the session (logs out the user)
     return redirect(url_for('login'))
 
-@app.route('/admin')
+@app.route('/admin', methods=['GET', 'POST'])
 def admin_dashboard():
     cursor = conn.cursor()
 
-    # Fetch verification report with employee & training details
-    cursor.execute("""
+    query = """
         SELECT 
-            e.emp_name,
-            e.emp_id,
-            t.training_name,
-            t.training_id,
-            vs.verification_status
-        FROM verification_status vs
-        JOIN employee e ON vs.emp_id = e.emp_id
-        JOIN training t ON vs.training_id = t.training_id
-    """)
+            e.emp_id AS 'Employee ID',
+            e.emp_name AS 'Employee Name',
+            t.training_id AS 'Training ID',
+            t.training_name AS 'Training Name',
+            CASE v.verification_status
+                WHEN 0 THEN 'Pending'
+                WHEN 1 THEN 'Verified'
+                ELSE 'Unknown'
+            END AS 'Verification Status'
+        FROM verification_status v
+        JOIN employee e ON v.emp_id = e.emp_id
+        JOIN training t ON v.training_id = t.training_id
+        ORDER BY e.emp_name ASC
+    """
 
-    report_data = cursor.fetchall()
+    cursor.execute(query)
+    results = cursor.fetchall()
+    cursor.close()
 
-    return render_template('admin_dashboard.html', report_data=report_data)
+    return render_template(
+        'admin_dashboard.html',
+        results=results,
+        user=session.get('username')
+    )
 
 @app.route('/manage_employee')
 def manage_employee():
-    return "<h1>Manage Employee Page</h1>"
+    with conn.cursor() as cursor:
+        cursor.execute("""
+            SELECT e.emp_id, e.emp_name, e.sap_id, e.designation, d.dept_name
+            FROM employee e
+            LEFT JOIN department d ON e.dept_id = d.dept_id
+        """)
+        employees = cursor.fetchall()
+    return render_template('manage_employee.html', employees=employees)
 
-@app.route('/manage_training')
+@app.route('/manage_training', methods=['GET', 'POST'])
 def manage_training():
-    return "<h1>Manage Training Page</h1>"
+    cursor = conn.cursor()
 
-@app.route('/download_data')
-def download_data():
-    return "<h1>Download Page</h1>"
+    query = """
+        SELECT 
+            e.emp_id AS 'Employee ID',
+            e.sap_id AS 'SAP ID',
+            e.emp_name AS 'Employee Name',
+            t.training_id AS 'Training ID',
+            t.training_name AS 'Training Name',
+            tr.scheduled_date AS 'Scheduled Date',
+            tr.joining_date AS 'Joining Date',
+            tr.completion_date AS 'Completion Date'
+        FROM trainee tr
+        JOIN employee e ON tr.emp_id = e.emp_id
+        JOIN training t ON tr.training_id = t.training_id
+        WHERE 1=1
+    """
+
+    # Filters
+    filters = []
+    filter_type = request.form.get('filter_type')
+    search_value = request.form.get('search_value')
+
+    if filter_type and search_value:
+        if filter_type == "emp_name":
+            filters.append("AND e.emp_name LIKE %s")
+            search_value = f"%{search_value}%"
+        elif filter_type == "emp_id":
+            filters.append("AND e.emp_id LIKE %s")
+            search_value = f"%{search_value}%"
+        elif filter_type == "sap_id":
+            filters.append("AND e.sap_id LIKE %s")
+            search_value = f"%{search_value}%"
+        elif filter_type == "training_name":
+            filters.append("AND t.training_name LIKE %s")
+            search_value = f"%{search_value}%"
+        elif filter_type == "due":
+            filters.append("""
+                AND DATE_ADD(tr.completion_date, INTERVAL t.period YEAR)
+                BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+            """)
+
+    if filters:
+        query += " " + " ".join(filters)
+
+    query += " ORDER BY e.emp_name ASC"
+
+    if search_value and filter_type != "due":
+        cursor.execute(query, (search_value,))
+    else:
+        cursor.execute(query)
+
+    results = cursor.fetchall()
+    cursor.close()
+
+    return render_template(
+        'admin_dashboard.html',  # Reuse same HTML
+        results=results,
+        user=session.get('username')
+    )
+
 
 @app.route('/reviewer_one', methods=['GET', 'POST'])
 def reviewer_one():
@@ -151,7 +224,7 @@ def reviewer_one():
                 BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
             """)
 
-        # Combine query
+        
         final_query = base_query + " " + " ".join(filters)
 
         # Debug print (optional)
