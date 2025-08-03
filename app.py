@@ -305,13 +305,6 @@ def check_employee(emp_id):
     result = cursor.fetchone()
     return {"exists": bool(result)}
 
-@app.route('/check_training/<training_id>')
-def check_training(training_id):
-    cursor = conn.cursor()
-    cursor.execute("SELECT training_id FROM training WHERE training_id = %s", (training_id,))
-    result = cursor.fetchone()
-    return {"exists": bool(result)}
-
 @app.route('/reviewer2')
 def reviewer2():
     return render_template('reviewer2_dashboard.html')
