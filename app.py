@@ -71,10 +71,32 @@ def admin_dashboard():
         FROM verification_status v
         JOIN employee e ON v.emp_id = e.emp_id
         JOIN training t ON v.training_id = t.training_id
-        ORDER BY e.emp_name ASC
+        WHERE 1=1
     """
 
-    cursor.execute(query)
+    # --- Added: handle filter from search box ---
+    filter_type = request.args.get('filter_type')
+    search_value = request.args.get('search_value')
+
+    if filter_type and search_value:
+        allowed_filters = {
+            "emp_id": "e.emp_id",
+            "emp_name": "e.emp_name",
+            "training_id": "t.training_id",
+            "training_name": "t.training_name",
+            "sap_id": "e.sap_id"
+        }
+
+        if filter_type in allowed_filters:
+            query += f" AND {allowed_filters[filter_type]} LIKE %s"
+            cursor.execute(query, (f"%{search_value}%",))
+        else:
+            cursor.execute(query)
+    else:
+        cursor.execute(query)
+
+    query += " ORDER BY e.emp_name ASC"
+
     results = cursor.fetchall()
     cursor.close()
 
@@ -83,6 +105,7 @@ def admin_dashboard():
         results=results,
         user=session.get('username')
     )
+
 
 @app.route('/manage_employee')
 def manage_employee():
@@ -95,7 +118,7 @@ def manage_employee():
         employees = cursor.fetchall()
     return render_template('manage_employee.html', employees=employees)
 
-@app.route('/manage_training', methods=['GET', 'POST'])
+@app.route('/manage_training', methods=['GET'])
 def manage_training():
     cursor = conn.cursor()
 
@@ -108,44 +131,25 @@ def manage_training():
             t.training_name AS 'Training Name',
             tr.scheduled_date AS 'Scheduled Date',
             tr.joining_date AS 'Joining Date',
-            tr.completion_date AS 'Completion Date',
-            tr.status AS 'Status'
+            tr.completion_date AS 'Completion Date'
         FROM trainee tr
         JOIN employee e ON tr.emp_id = e.emp_id
         JOIN training t ON tr.training_id = t.training_id
         WHERE 1=1
     """
 
-    # Filters
-    filters = []
-    filter_type = request.form.get('filter_type')
-    search_value = request.form.get('search_value')
+    # Filters from GET parameters
+    filter_type = request.args.get('filter_type')
+    search_value = request.args.get('search_value')
 
     if filter_type and search_value:
-        if filter_type == "emp_name":
-            filters.append("AND e.emp_name LIKE %s")
+        if filter_type in ["emp_name", "emp_id", "sap_id", "training_name", "training_id"]:
+            query += f" AND { 'e.' if filter_type.startswith('emp') or filter_type == 'sap_id' else 't.'}{filter_type} LIKE %s"
             search_value = f"%{search_value}%"
-        elif filter_type == "emp_id":
-            filters.append("AND e.emp_id LIKE %s")
-            search_value = f"%{search_value}%"
-        elif filter_type == "sap_id":
-            filters.append("AND e.sap_id LIKE %s")
-            search_value = f"%{search_value}%"
-        elif filter_type == "training_name":
-            filters.append("AND t.training_name LIKE %s")
-            search_value = f"%{search_value}%"
-        elif filter_type == "due":
-            filters.append("""
-                AND DATE_ADD(tr.completion_date, INTERVAL t.period YEAR)
-                BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
-            """)
-
-    if filters:
-        query += " " + " ".join(filters)
 
     query += " ORDER BY e.emp_name ASC"
 
-    if search_value and filter_type != "due":
+    if filter_type and search_value:
         cursor.execute(query, (search_value,))
     else:
         cursor.execute(query)
@@ -154,11 +158,10 @@ def manage_training():
     cursor.close()
 
     return render_template(
-        'admin_dashboard.html',  # Reuse same HTML
+        'admin_dashboard.html',  # Reuse the same HTML
         results=results,
         user=session.get('username')
     )
-
 
 @app.route('/reviewer_one', methods=['GET', 'POST'])
 def reviewer_one():
