@@ -2,9 +2,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const empIdInput = document.getElementById('emp_id');
     const empError = document.getElementById('empError');
 
-    const trainingIdInput = document.getElementById('training_id');
-    const trainingError = document.getElementById('trainingError');
-
     const submitBtn = document.querySelector('button[type="submit"]');
 
     function checkEmployee(empId) {
@@ -45,13 +42,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
     empIdInput.addEventListener('input', async function () {
         const empValid = await checkEmployee(this.value.trim());
-        const trainingValid = await checkTraining(trainingIdInput.value.trim());
-        submitBtn.disabled = !(empValid && trainingValid);
+        submitBtn.disabled = !empValid;
     });
 
-    trainingIdInput.addEventListener('input', async function () {
-        const empValid = await checkEmployee(empIdInput.value.trim());
-        const trainingValid = await checkTraining(this.value.trim());
-        submitBtn.disabled = !(empValid && trainingValid);
+});
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("traineeForm");
+    form.addEventListener("submit", function (event) {
+        setTimeout(() => {
+            form.reset();
+        }, 100);
     });
 });

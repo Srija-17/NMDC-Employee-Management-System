@@ -266,6 +266,7 @@ def add_trainee():
     trainings = cursor.fetchall()
 
     error_message = None
+    success_message = None
 
     if request.method == 'POST':
         emp_id = request.form.get('emp_id')
@@ -281,19 +282,22 @@ def add_trainee():
             """
             cursor.execute(sql, (emp_id, training_id, scheduled_date, joining_date, completion_date))
             conn.commit()
-            return redirect(url_for('reviewer_one'))
+
+            # Set success message instead of redirect
+            success_message = "Trainee added successfully."
 
         except pymysql.err.IntegrityError as e:
-            # MySQL error 1452 = foreign key constraint fails
-            if e.args[0] == 1452:
-                error_message = "The employee does not exist"
+            if e.args[0] == 1452:  # Foreign key constraint fails
+                error_message = "The employee or training does not exist."
             else:
                 error_message = str(e)
 
     return render_template('add_trainee.html',
                            employees=employees,
                            trainings=trainings,
-                           error_message=error_message)
+                           error_message=error_message,
+                           success_message=success_message)
+
 @app.route('/check_employee/<emp_id>')
 def check_employee(emp_id):
     cursor = conn.cursor()
