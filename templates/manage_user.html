@@ -41,17 +41,19 @@
             </select>
 
             <!-- Search Input -->
-            <input type="text" id="searchInput" name="search_value" placeholder="Enter search value"
-                   value="{{ request.args.get('search_value', '') }}" 
-                   {% if request.args.get('filter_type') == 'role' %}style="display:none;"{% endif %}>
+<input type="text" id="searchInput" name="search_value" placeholder="Enter search value"
+       value="{{ request.args.get('search_value', '') }}" 
+       {% if request.args.get('filter_type') == 'role' %}style="display:none;"{% endif %}>
 
-            <!-- Role Dropdown -->
-            <select id="roleDropdown" name="search_value" style="display:none;">
-                <option value="">-- Select Role --</option>
-                <option value="admin" {% if request.args.get('search_value') == 'admin' %}selected{% endif %}>Admin</option>
-                <option value="reviewer_one" {% if request.args.get('search_value') == 'reviewer_one' %}selected{% endif %}>Reviewer One</option>
-                <option value="reviewer_two" {% if request.args.get('search_value') == 'reviewer_two' %}selected{% endif %}>Reviewer Two</option>
-            </select>
+<!-- Role Dropdown -->
+<select id="roleDropdown" name="search_value"
+        {% if request.args.get('filter_type') != 'role' %}style="display:none;"{% endif %}>
+    <option value="">-- Select Role --</option>
+    <option value="admin" {% if request.args.get('search_value') == 'admin' %}selected{% endif %}>Admin</option>
+    <option value="reviewer_one" {% if request.args.get('search_value') == 'reviewer_one' %}selected{% endif %}>Reviewer One</option>
+    <option value="reviewer_two" {% if request.args.get('search_value') == 'reviewer_two' %}selected{% endif %}>Reviewer Two</option>
+</select>
+
 
             <button type="submit">Search</button>
         </form>

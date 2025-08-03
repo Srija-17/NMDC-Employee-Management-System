@@ -201,7 +201,7 @@ def manage_user():
                username AS 'Username',
                password AS 'Password',
                role AS 'Role'
-        FROM user
+        FROM `user`
         WHERE 1=1
     """
 
@@ -209,9 +209,11 @@ def manage_user():
     search_value = request.args.get('search_value')
 
     if filter_type and search_value:
-        if filter_type in ["username", "role"]:
-            query += f" AND {filter_type} LIKE %s"
+        if filter_type == "username":
+            query += " AND username LIKE %s"
             search_value = f"%{search_value}%"
+        elif filter_type == "role":
+            query += " AND role = %s"  # exact match for role
 
     query += " ORDER BY username ASC"
 
@@ -228,7 +230,6 @@ def manage_user():
         users=users,
         user=session.get('username')
     )
-
 
 @app.route('/update_users_bulk', methods=['POST'])
 def update_users_bulk():

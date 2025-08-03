@@ -6,6 +6,32 @@ document.addEventListener("DOMContentLoaded", () => {
     const table = document.querySelector("#usersTable");
     const downloadBtn = document.getElementById("downloadBtn");
 
+    const filterType = document.getElementById("filterType");
+    const searchInput = document.getElementById("searchInput");
+    const roleDropdown = document.getElementById("roleDropdown");
+
+    // Show correct search box based on selected filter on load
+    if (filterType.value === "role") {
+        searchInput.style.display = "none";
+        roleDropdown.style.display = "inline-block";
+    } else {
+        searchInput.style.display = "inline-block";
+        roleDropdown.style.display = "none";
+    }
+
+    // Switch between search input and role dropdown instantly
+    filterType.addEventListener("change", () => {
+        if (filterType.value === "role") {
+            searchInput.style.display = "none";
+            roleDropdown.style.display = "inline-block";
+            searchInput.value = ""; // clear text search when switching
+        } else {
+            searchInput.style.display = "inline-block";
+            roleDropdown.style.display = "none";
+            roleDropdown.value = ""; // clear role selection
+        }
+    });
+
     // Toggle edit mode
     editBtn.addEventListener("click", () => {
         const inputs = table.querySelectorAll("input, select");
@@ -58,7 +84,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 const cols = row.querySelectorAll("th, td");
                 let rowData = [];
                 cols.forEach(col => {
-                    // For input/select, take the value
                     if (col.querySelector("input")) {
                         rowData.push(`"${col.querySelector("input").value}"`);
                     } else if (col.querySelector("select")) {
