@@ -192,11 +192,17 @@ def update_training_bulk():
     except Exception as e:
         conn.rollback()
         return {"success": False, "message": str(e)}, 500
-@app.route('/manage_user', methods=['GET'])
+    
+@app.route('/manage_user', methods=['GET', 'POST'])
 def manage_user():
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)  # ✅ Correct for PyMySQL
 
-    query = """
+    cursor.execute("SELECT DISTINCT role FROM user")
+    roles = [row['role'] for row in cursor.fetchall()]
+
+    search_results = []
+
+    base_query = """
         SELECT user_id AS 'User ID',
                username AS 'Username',
                password AS 'Password',
@@ -204,31 +210,28 @@ def manage_user():
         FROM `user`
         WHERE 1=1
     """
+    params = []
 
-    filter_type = request.args.get('filter_type')
-    search_value = request.args.get('search_value')
+    filter_type = request.values.get('filter_type')
+    search_value = request.values.get('search_value')
+    role_value = request.values.get('role')
 
-    if filter_type and search_value:
-        if filter_type == "username":
-            query += " AND username LIKE %s"
-            search_value = f"%{search_value}%"
-        elif filter_type == "role":
-            query += " AND role = %s"  # exact match for role
+    if filter_type == 'username' and search_value:
+        base_query += " AND username LIKE %s"
+        params.append(f"%{search_value}%")
+    elif filter_type == 'role' and role_value:
+        base_query += " AND role = %s"
+        params.append(role_value)
 
-    query += " ORDER BY username ASC"
-
-    if filter_type and search_value:
-        cursor.execute(query, (search_value,))
-    else:
-        cursor.execute(query)
-
-    users = cursor.fetchall()
+    cursor.execute(base_query, tuple(params))
+    search_results = cursor.fetchall()
     cursor.close()
 
     return render_template(
         'manage_user.html',
-        users=users,
-        user=session.get('username')
+        user=session.get('username'),
+        roles=roles,
+        users=search_results
     )
 
 @app.route('/update_users_bulk', methods=['POST'])
