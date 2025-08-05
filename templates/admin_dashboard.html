@@ -57,7 +57,7 @@
             <form method="GET" action="{{ url_for('manage_training') }}"
                 style="display: flex; gap: 10px; flex-grow: 1;">
                 <select name="filter_type">
-                    <option value="">-- Select Filter --</option>
+                    <option value=""> Select Filter </option>
                     <option value="emp_id" {% if request.args.get('filter_type')=='emp_id' %}selected{% endif %}>
                         Employee ID</option>
                     <option value="sap_id" {% if request.args.get('filter_type')=='sap_id' %}selected{% endif %}>SAP ID
