@@ -256,11 +256,11 @@ def update_users_bulk():
             ))
 
         conn.commit()
-        return {"success": True, "message": "Users updated successfully"}
+        return jsonify(success=True, message="Users updated successfully")
     except Exception as e:
         conn.rollback()
-        return {"success": False, "message": str(e)}, 500
-
+        return jsonify(success=False, message=str(e)), 500
+    
 @app.route('/reviewer_one', methods=['GET', 'POST'])
 def reviewer_one():
     cursor = conn.cursor()

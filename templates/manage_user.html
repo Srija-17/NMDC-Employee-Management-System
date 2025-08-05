@@ -7,84 +7,122 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/manage_user.css') }}">
     <style>
-        .hidden { display: none !important; }
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 
 <body>
-<div class="sidebar">
-    <div class="logo-container">
-        <img src="https://companieslogo.com/img/orig/NMDC.NS-b66af539.png" alt="NMDC Logo" class="logo">
-        <h2>Admin</h2>
-    </div>
-    <ul class="menu">
-        <li><a href="{{ url_for('admin_dashboard') }}"><i class="fa-solid fa-list"></i> Report</a></li>
-        <li><a href="{{ url_for('manage_user') }}" class="active"><i class="fa-solid fa-users"></i> Manage Users</a></li>
-        <li><a href="{{ url_for('manage_training') }}"><i class="fa-solid fa-chalkboard-user"></i> Manage Training</a></li>
-        <li><a href="#" id="downloadBtn"><i class="fa-solid fa-download"></i> Download</a></li>
-        <li><a href="{{ url_for('logout') }}"><i class="fa-solid fa-right-from-bracket"></i> Logout</a></li>
-    </ul>
-</div>
-
-<div class="main-content">
-    <header>
-        <h1>Manage Users</h1>
-        <span class="welcome">Welcome, {{ user }}</span>
-    </header>
-
-    <div class="navbar-actions">
-        <form method="GET" action="{{ url_for('manage_user') }}" class="search-form">
-    <select name="filter_type" id="filterType">
-        <option value="" disabled selected hidden>Filter</option>
-        <option value="username" {% if request.args.get('filter_type') == 'username' %}selected{% endif %}>Username</option>
-        <option value="role" {% if request.args.get('filter_type') == 'role' %}selected{% endif %}>Role</option>
-    </select>
-
-    <!-- Username Search -->
-    <input type="text" id="searchInput" name="search_value" placeholder="Enter username"
-           value="{{ request.args.get('search_value', '') }}"
-           {% if request.args.get('filter_type') == 'role' %}class="hidden"{% endif %}>
-
-    <!-- Role Dropdown -->
-    <select id="roleDropdown" name="role" class="{% if request.args.get('filter_type') != 'role' %}hidden{% endif %}">
-        <option value="">-- Select Role --</option>
-        {% for r in roles %}
-        <option value="{{ r }}" {% if request.args.get('role') == r %}selected{% endif %}>{{ r }}</option>
-        {% endfor %}
-    </select>
-
-    <button type="submit">Search</button>
-</form>
-
+    <div class="sidebar">
+        <div class="logo-container">
+            <img src="https://companieslogo.com/img/orig/NMDC.NS-b66af539.png" alt="NMDC Logo" class="logo">
+            <h2>Admin</h2>
+        </div>
+        <ul class="menu">
+            <li><a href="{{ url_for('admin_dashboard') }}"><i class="fa-solid fa-list"></i> Report</a></li>
+            <li><a href="{{ url_for('manage_user') }}" class="active"><i class="fa-solid fa-users"></i> Manage Users</a>
+            </li>
+            <li><a href="{{ url_for('manage_training') }}"><i class="fa-solid fa-chalkboard-user"></i> Manage
+                    Training</a></li>
+            <li><a href="#" id="downloadBtn"><i class="fa-solid fa-download"></i> Download</a></li>
+            <li><a href="{{ url_for('logout') }}"><i class="fa-solid fa-right-from-bracket"></i> Logout</a></li>
+        </ul>
     </div>
 
-    <div id="results">
-        {% if users %}
-        <table id="usersTable">
-            <thead>
-                <tr>
-                    {% for col in users[0].keys() %}
-                        <th>{{ col }}</th>
+    <div class="main-content">
+        <header>
+            <h1>Manage Users</h1>
+            <span class="welcome">Welcome, {{ user }}</span>
+        </header>
+
+        <div class="navbar-actions">
+            <form method="GET" action="{{ url_for('manage_user') }}" class="search-form">
+                <select name="filter_type" id="filterType">
+                    <option value="" disabled selected hidden>Filter</option>
+                    <option value="username" {% if request.args.get('filter_type')=='username' %}selected{% endif %}>
+                        Username</option>
+                    <option value="role" {% if request.args.get('filter_type')=='role' %}selected{% endif %}>Role
+                    </option>
+                </select>
+
+                <!-- Username Search -->
+                <input type="text" id="searchInput" name="search_value" placeholder="Enter username"
+                    value="{{ request.args.get('search_value', '') }}" {% if request.args.get('filter_type')=='role'
+                    %}class="hidden" {% endif %}>
+
+                <!-- Role Dropdown -->
+                <select id="roleDropdown" name="role"
+                    class="{% if request.args.get('filter_type') != 'role' %}hidden{% endif %}">
+                    <option value="">-- Select Role --</option>
+                    {% for r in roles %}
+                    <option value="{{ r }}" {% if request.args.get('role')==r %}selected{% endif %}>{{ r }}</option>
                     {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in users %}
-                <tr>
-                    <td>{{ row["User ID"] }}</td>
-                    <td>{{ row["Username"] }}</td>
-                    <td>{{ row["Password"] }}</td>
-                    <td>{{ row["Role"] }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        {% else %}
-        <p class="no-data">No records found.</p>
-        {% endif %}
-    </div>
-</div>
+                </select>
 
-<script src="{{ url_for('static', filename='js/manage_user.js') }}"></script>
+                <button type="submit">Search</button>
+            <button id="editBtn">Edit</button>
+            <button id="saveBtn">Save</button></form>
+        </div>
+
+        <div id="results">
+            {% if users %}
+            <table id="usersTable">
+                <thead>
+                    <tr>
+                        {% for col in users[0].keys() %}
+                        <th>{{ col }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in users %}
+                    <tr data-user-id="{{ row['User ID'] }}">
+                        <td>{{ row["User ID"] }}</td>
+                        <td>{{ row["Username"] }}</td>
+                        <td>{{ row["Password"] }}</td>
+                        <td>{{ row["Role"] }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="no-data">No records found.</p>
+            {% endif %}
+        </div>
+    </div>
+    <script>
+       // Download table data as CSV
+    document.getElementById('downloadBtn').addEventListener('click', function (e) {
+      e.preventDefault();
+
+      const table = document.querySelector("#results table");
+      if (!table) {
+        alert("No data to download.");
+        return;
+      }
+
+      let csv = [];
+      const rows = table.querySelectorAll("tr");
+
+      rows.forEach(row => {
+        const cols = row.querySelectorAll("th, td");
+        const rowData = [];
+        cols.forEach(col => rowData.push('"' + col.innerText.replace(/"/g, '""') + '"'));
+        csv.push(rowData.join(","));
+      });
+
+      const blob = new Blob([csv.join("\n")], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.setAttribute("href", url);
+      a.setAttribute("download", "results.csv");
+      a.click();
+      window.URL.revokeObjectURL(url);
+    });
+  </script> 
+    <script src="{{ url_for('static', filename='js/manage_user.js') }}"></script>
 </body>
+
 </html>

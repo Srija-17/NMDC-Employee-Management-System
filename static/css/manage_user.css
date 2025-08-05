@@ -85,33 +85,22 @@ header {
     padding: 6px;
     font-size: 14px;
 }
-
-.edit-save-buttons {
-    display: flex;
-    gap: 10px;
+#editBtn {
+    cursor: pointer;
+    background-color: orange !important;
+    padding: 6px 12px;
+    border: none !important;
+    color: white !important;
+    border-radius: 4px;
 }
 
-.edit-btn {
-    background: orange;
+#saveBtn {
+    background-color: green !important;
     padding: 6px 12px;
-    border: none;
-    color: white;
+    border: none !important;
+    color: white !important;
     border-radius: 4px;
     cursor: pointer;
-}
-
-.save-btn {
-    background: green;
-    padding: 6px 12px;
-    border: none;
-    color: white;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.save-btn:disabled {
-    background: #ccc;
-    cursor: not-allowed;
 }
 
 /* Table */
@@ -121,7 +110,8 @@ table {
     margin-top: 15px;
 }
 
-th, td {
+th,
+td {
     border: 1px solid #ddd;
     padding: 8px;
 }
