@@ -21,10 +21,8 @@
         </div>
         <ul class="menu">
             <li><a href="{{ url_for('admin_dashboard') }}"><i class="fa-solid fa-list"></i> Report</a></li>
-            <li><a href="{{ url_for('manage_user') }}" class="active"><i class="fa-solid fa-users"></i> Manage Users</a>
-            </li>
-            <li><a href="{{ url_for('manage_training') }}"><i class="fa-solid fa-chalkboard-user"></i> Manage
-                    Training</a></li>
+            <li><a href="{{ url_for('manage_user') }}" class="active"><i class="fa-solid fa-users"></i> Manage Users</a></li>
+            <li><a href="{{ url_for('manage_training') }}"><i class="fa-solid fa-chalkboard-user"></i> Manage Training</a></li>
             <li><a href="#" id="downloadBtn"><i class="fa-solid fa-download"></i> Download</a></li>
             <li><a href="{{ url_for('logout') }}"><i class="fa-solid fa-right-from-bracket"></i> Logout</a></li>
         </ul>
@@ -37,21 +35,17 @@
         </header>
 
         <div class="navbar-actions">
-            <form method="GET" action="{{ url_for('manage_user') }}" class="search-form">
+            <form method="GET" action="{{ url_for('manage_user') }}" class="search-form" id="searchForm">
                 <select name="filter_type" id="filterType">
                     <option value="" disabled selected hidden>Filter</option>
-                    <option value="username" {% if request.args.get('filter_type')=='username' %}selected{% endif %}>
-                        Username</option>
-                    <option value="role" {% if request.args.get('filter_type')=='role' %}selected{% endif %}>Role
-                    </option>
+                    <option value="username" {% if request.args.get('filter_type')=='username' %}selected{% endif %}>Username</option>
+                    <option value="role" {% if request.args.get('filter_type')=='role' %}selected{% endif %}>Role</option>
                 </select>
 
-                <!-- Username Search -->
                 <input type="text" id="searchInput" name="search_value" placeholder="Enter username"
-                    value="{{ request.args.get('search_value', '') }}" {% if request.args.get('filter_type')=='role'
-                    %}class="hidden" {% endif %}>
+                    value="{{ request.args.get('search_value', '') }}"
+                    {% if request.args.get('filter_type')=='role' %}class="hidden"{% endif %}>
 
-                <!-- Role Dropdown -->
                 <select id="roleDropdown" name="role"
                     class="{% if request.args.get('filter_type') != 'role' %}hidden{% endif %}">
                     <option value="">-- Select Role --</option>
@@ -61,8 +55,9 @@
                 </select>
 
                 <button type="submit">Search</button>
-            <button id="editBtn">Edit</button>
-            <button id="saveBtn">Save</button></form>
+                <button id="editBtn" type="button">Edit</button>
+                <button id="saveBtn" type="button">Save</button>
+            </form>
         </div>
 
         <div id="results">
@@ -91,38 +86,8 @@
             {% endif %}
         </div>
     </div>
-    <script>
-       // Download table data as CSV
-    document.getElementById('downloadBtn').addEventListener('click', function (e) {
-      e.preventDefault();
 
-      const table = document.querySelector("#results table");
-      if (!table) {
-        alert("No data to download.");
-        return;
-      }
-
-      let csv = [];
-      const rows = table.querySelectorAll("tr");
-
-      rows.forEach(row => {
-        const cols = row.querySelectorAll("th, td");
-        const rowData = [];
-        cols.forEach(col => rowData.push('"' + col.innerText.replace(/"/g, '""') + '"'));
-        csv.push(rowData.join(","));
-      });
-
-      const blob = new Blob([csv.join("\n")], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.setAttribute("href", url);
-      a.setAttribute("download", "results.csv");
-      a.click();
-      window.URL.revokeObjectURL(url);
-    });
-  </script> 
+    <!-- JS for edit/save/download -->
     <script src="{{ url_for('static', filename='js/manage_user.js') }}"></script>
 </body>
-
 </html>
