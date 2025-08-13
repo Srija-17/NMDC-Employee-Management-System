@@ -10,7 +10,7 @@ body {
 }
 
 .navbar {
-  background-color: rgb(180, 227, 246);
+  background: #2c3e50;
   color: black;
   padding: 5px 20px;
   display: flex;
@@ -56,7 +56,10 @@ table {
   border-collapse: collapse;
   background: white;
 }
-
+th {
+    background: #2c3e50;
+    color: #fff;
+}
 th, td {
   padding: 10px;
   border: 1px solid #ccc;

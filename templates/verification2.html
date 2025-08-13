@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Verification Records</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/trainee_verification.css') }}">
+    <style>
+        table, th, td { border: 1px solid black; border-collapse: collapse; padding: 5px; }
+        button { margin: 2px; cursor: pointer; }
+    </style>
+    <script>
+        let changes = {};
+
+        function setStatus(empId, trainingId, status) {
+            const key = `${empId}_${trainingId}`;
+            changes[key] = status;
+            document.getElementById(`status-${key}`).textContent =
+                status === 1 ? "Not Verified" :
+                status === 2 ? "Accepted" :
+                status === -2 ? "Rejected" : "";
+        }
+
+        async function updateAll() {
+            if (Object.keys(changes).length === 0) {
+                alert("No changes to update.");
+                return;
+            }
+            try {
+                const response = await fetch("/bulk_update2", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(changes)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    alert("Updates saved successfully!");
+                    changes = {};
+                    location.reload();
+                } else {
+                    alert("Error updating records: " + (result.error || "Unknown error"));
+                }
+            } catch (err) {
+                alert("Error: " + err);
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="navbar">
+        <h2>Verification Records</h2>
+        <a href="{{ url_for('reviewer2') }}">Back</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+        <form method="get" action="{{ url_for('verification2') }}" style="display:inline;">
+            <select name="filter" onchange="this.form.submit()">
+                <option value="all" {% if current_filter == 'all' %}selected{% endif %}>All</option>
+                <option value="not_verified" {% if current_filter == 'not_verified' %}selected{% endif %}>Not Verified</option>
+                <option value="accepted" {% if current_filter == 'accepted' %}selected{% endif %}>Accepted</option>
+                <option value="rejected" {% if current_filter == 'rejected' %}selected{% endif %}>Rejected</option>
+            </select>
+        </form>
+        <button onclick="updateAll()">Update</button>
+    </div>
+
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Emp ID</th>
+                    <th>Name</th>
+                    <th>Designation</th>
+                    <th>Department</th>
+                    <th>Training</th>
+                    <th>Scheduled Date</th>
+                    <th>Joining Date</th>
+                    <th>Completion Date</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data %}
+                {% set key = row.emp_id ~ "_" ~ row.training_id %}
+                <tr>
+                    <td>{{ row.emp_id }}</td>
+                    <td>{{ row.emp_name }}</td>
+                    <td>{{ row.designation }}</td>
+                    <td>{{ row.dept_name }}</td>
+                    <td>{{ row.training_name }}</td>
+                    <td>{{ row.scheduled_date }}</td>
+                    <td>{{ row.joining_date }}</td>
+                    <td>{{ row.completion_date }}</td>
+                    <td>
+                        {% if row.verification == 1 %}
+                            <button type="button" id="acceptBtn" onclick="setStatus('{{ row.emp_id }}','{{ row.training_id }}',2)">Accept</button>
+                            <button type="button" onclick="setStatus('{{ row.emp_id }}','{{ row.training_id }}',-2)">Reject</button>
+                        {% elif row.verification == 2 %}
+                            <button type="button" onclick="setStatus('{{ row.emp_id }}','{{ row.training_id }}',-2)">Reject</button>
+                        {% elif row.verification == -2 %}
+                            <button type="button" id="acceptBtn" onclick="setStatus('{{ row.emp_id }}','{{ row.training_id }}',2)">Accept</button>
+                        {% endif %}
+                        <span id="status-{{ key }}"></span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

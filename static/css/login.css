@@ -7,7 +7,7 @@ body{
     display: flex;
     align-items: center;
     justify-content: center;
-    background-color:rgb(180, 227, 246);
+    background: #2c3e50;
 }
 .login-container{
     padding:20px;
@@ -34,6 +34,6 @@ body{
 #login{
     width:100px;
     height:20px;
-    background-color:rgb(180, 227, 246);
+    background-color: #008000;
     cursor: pointer;
 }

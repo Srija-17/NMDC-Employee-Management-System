@@ -83,6 +83,24 @@
                 disabled>Save</button>
         </div>
         {% endif %}
+        <!-- Verification Filter -->
+        <form method="GET" style="margin: 15px 20px;">
+            <label for="verification_filter">Show:</label>
+            <select name="verification_filter" id="verification_filter" onchange="this.form.submit()">
+                <option value="all" {% if request.args.get('verification_filter')=='all' or not
+                    request.args.get('verification_filter') %}selected{% endif %}>All</option>
+                <option value="not_verified" {% if request.args.get('verification_filter')=='not_verified' %}selected{%
+                    endif %}>Not Verified</option>
+                <option value="rev1_verified" {% if request.args.get('verification_filter')=='rev1_verified'
+                    %}selected{% endif %}>Partially Verified</option>
+                <option value="rev2_verified" {% if request.args.get('verification_filter')=='rev2_verified'
+                    %}selected{% endif %}>Completely Verified</option>
+                <option value="rev1_rejected" {% if request.args.get('verification_filter')=='rev1_rejected'
+                    %}selected{% endif %}>Partially Rejected</option>
+                <option value="rev2_rejected" {% if request.args.get('verification_filter')=='rev2_rejected'
+                    %}selected{% endif %}>Completely Rejected</option>
+            </select>
+        </form>
 
         <!-- Table -->
         <div id="results">

@@ -61,47 +61,49 @@ def login():
 def logout():
     session.clear()  # Clears the session (logs out the user)
     return redirect(url_for('login'))
-
-@app.route('/admin', methods=['GET', 'POST'])
+@app.route('/admin', methods=['GET'])
 def admin_dashboard():
-    cursor = conn.cursor()
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
+    # Base query
     query = """
         SELECT 
-            e.emp_id AS 'Employee ID',
-            e.emp_name AS 'Employee Name',
-            t.training_id AS 'Training ID',
-            t.training_name AS 'Training Name',
-            CASE v.verification_status
-                WHEN 0 THEN 'Pending'
-                WHEN 1 THEN 'Verified'
+            e.emp_id AS `Employee ID`,
+            e.emp_name AS `Employee Name`,
+            t.training_id AS `Training ID`,
+            t.training_name AS `Training Name`,
+            tr.scheduled_date AS `Scheduled Date`,
+            tr.joining_date AS `Joining Date`,
+            tr.completion_date AS `Completion Date`,
+            tr.status AS `Status`,
+            CASE tr.verification
+                WHEN 0 THEN 'Not Verified'
+                WHEN 1 THEN 'Partially Verified'
+                WHEN 2 THEN 'Completely Verified'
+                WHEN -1 THEN 'Partially Rejected'
+                WHEN -2 THEN 'Completely Rejected'
                 ELSE 'Unknown'
-            END AS 'Verification Status'
-        FROM verification_status v
-        JOIN employee e ON v.emp_id = e.emp_id
-        JOIN training t ON v.training_id = t.training_id
-        WHERE 1=1
+            END AS `Verification Status`
+        FROM trainee tr
+        JOIN employee e ON tr.emp_id = e.emp_id
+        JOIN training t ON tr.training_id = t.training_id
     """
 
-    # --- Added: handle filter from search box ---
-    filter_type = request.args.get('filter_type')
-    search_value = request.args.get('search_value')
+    # Handle dropdown filter
+    filter_map = {
+        "not_verified": 0,
+        "rev1_verified": 1,
+        "rev2_verified": 2,
+        "rev1_rejected": -1,
+        "rev2_rejected": -2
+    }
+    selected_filter = request.args.get('verification_filter')
 
-    if filter_type and search_value:
-        allowed_filters = {
-            "emp_id": "e.emp_id",
-            "emp_name": "e.emp_name",
-            "training_id": "t.training_id",
-            "training_name": "t.training_name",
-            "sap_id": "e.sap_id"
-        }
-
-        if filter_type in allowed_filters:
-            query += f" AND {allowed_filters[filter_type]} LIKE %s"
-            cursor.execute(query, (f"%{search_value}%",))
-        else:
-            cursor.execute(query)
+    if selected_filter in filter_map:
+        query += " WHERE tr.verification = %s"
+        cursor.execute(query, (filter_map[selected_filter],))
     else:
+        query += " WHERE tr.verification IN (0, 1, -1, 2, -2)"
         cursor.execute(query)
 
     query += " ORDER BY e.emp_name ASC"
@@ -114,7 +116,6 @@ def admin_dashboard():
         results=results,
         user=session.get('username')
     )
-
 
 @app.route('/manage_employee')
 def manage_employee():
@@ -577,9 +578,138 @@ def verification_update_bulk():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)})
 
-@app.route('/reviewer2')
+@app.route('/reviewer2', methods=['GET', 'POST'])
 def reviewer2():
-    return render_template('reviewer2_dashboard.html')
+    cursor = conn.cursor()
+
+    # Get logged-in reviewer_two username
+    cursor.execute("SELECT username FROM user WHERE role='reviewer_two'")
+    user_data = cursor.fetchone()
+
+    # Get department names for dropdown
+    cursor.execute("SELECT dept_name FROM department")
+    departments = [row['dept_name'] for row in cursor.fetchall()]
+
+    search_results = []
+
+    base_query = """
+        SELECT 
+            e.emp_id,
+            e.emp_name,
+            e.sap_id,
+            d.dept_name,
+            e.designation,
+            tr.training_name,
+            tr.period,
+            tn.scheduled_date,
+            tn.joining_date,
+            tn.completion_date
+        FROM trainee tn
+        JOIN employee e ON tn.emp_id = e.emp_id
+        JOIN training tr ON tn.training_id = tr.training_id
+        LEFT JOIN department d ON e.dept_id = d.dept_id
+        WHERE 1=1
+    """
+
+    params = []
+
+    if request.method == 'POST':
+        filter_type = request.form.get('filter_type')
+        search_value = request.form.get('search_value')
+
+        if filter_type == 'emp_name':
+            base_query += " AND e.emp_name LIKE %s"
+            params.append(f"%{search_value}%")
+        elif filter_type == 'emp_id':
+            base_query += " AND e.emp_id = %s"
+            params.append(search_value)
+        elif filter_type == 'sap_id':
+            base_query += " AND e.sap_id = %s"
+            params.append(search_value)
+        elif filter_type == 'department':
+            dept_value = request.form.get('department') or search_value
+            if dept_value:
+                base_query += " AND d.dept_name = %s"
+                params.append(dept_value)
+        elif filter_type == 'training_name':
+            base_query += " AND tr.training_name LIKE %s"
+            params.append(f"%{search_value}%")
+        elif filter_type == 'training_date':
+            join_date = request.form.get('joining_date')
+            comp_date = request.form.get('completion_date')
+            if join_date and comp_date:
+                base_query += " AND tn.joining_date <= %s AND tn.completion_date >= %s"
+                params.extend([comp_date, join_date])
+        elif filter_type == 'due':
+            base_query += """
+                AND DATE_ADD(tn.completion_date, INTERVAL tr.period YEAR)
+                BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 30 DAY)
+            """
+
+    base_query += " ORDER BY e.emp_name ASC"
+
+    cursor.execute(base_query, tuple(params))
+    search_results = cursor.fetchall()
+
+    return render_template(
+        'reviewer2_dashboard.html',  # updated template
+        user=user_data['username'],
+        departments=departments,
+        results=search_results
+    )
+
+@app.route('/verification2', methods=['GET'])
+def verification2():
+    # reviewer_two sees only verification=1 initially
+    filter_val = request.args.get('filter', 'all')  # all, not_verified, accepted, rejected
+
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+    base_query = """
+        SELECT e.emp_id, e.emp_name, e.designation, d.dept_name,
+               t.training_id, t.training_name,
+               tr.scheduled_date, tr.joining_date, tr.completion_date,
+               tr.verification
+        FROM employee e
+        JOIN department d ON e.dept_id = d.dept_id
+        JOIN trainee tr ON e.emp_id = tr.emp_id
+        JOIN training t ON tr.training_id = t.training_id
+        WHERE tr.verification = 1
+    """
+
+    if filter_val == 'not_verified':
+        base_query += " AND tr.verification = 1"
+    elif filter_val == 'accepted':
+        base_query += " AND tr.verification = 2"
+    elif filter_val == 'rejected':
+        base_query += " AND tr.verification = -2"
+    # else 'all' -> keep only verification=1 as above
+
+    cursor.execute(base_query)
+    data = cursor.fetchall()
+
+    return render_template(
+        'verification2.html',
+        data=data,
+        current_filter=filter_val
+    )
+
+
+@app.route('/bulk_update2', methods=['POST'])
+def bulk_update2():
+    changes = request.json  # expect {"empId_trainingId": status, ...}
+    if not changes:
+        return jsonify({"success": False, "error": "No changes received"})
+
+    cursor = conn.cursor()
+    for key, status in changes.items():
+        emp_id, training_id = key.split('_')
+        cursor.execute(
+            "UPDATE trainee SET verification=%s WHERE emp_id=%s AND training_id=%s",
+            (status, emp_id, training_id)
+        )
+    conn.commit()
+    return jsonify({"success": True})
 
 if __name__ == '__main__':
     app.run(debug=True)

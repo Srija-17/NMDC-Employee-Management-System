@@ -73,11 +73,38 @@ button:hover {
 }
 
 .btn-accept {
-    background-color: #27ae60;
-    color: #fff;
+   color: blabk;
 }
 
 .btn-reject {
-    background-color: #c0392b;
-    color: #fff;
+    color: blabk;
+}
+
+button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+/* Back button in top-right corner */
+.back-btn {
+    height: 100px;
+    width: auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    height: 30px;
+    right: 15px;
+    top: 15px;
+    background: #333;
+    color: white;
+    border: none;
+    padding: 0 14px;
+    font-size: 14px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.back-btn:hover {
+    background: #555;
 }

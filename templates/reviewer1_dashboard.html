@@ -3,9 +3,10 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>Reviewer Dashboard</title>
+  <title>Reviewer One Dashboard</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/reviewer1.css') }}">
+  <script src="{{ url_for('static', filename='js/reviewer1.js') }}" defer></script>
   <style>
     .hidden {
       display: none !important;
@@ -94,67 +95,5 @@
     </table>
     {% endif %}
   </div>
-
-  <script>
-    const filterType = document.getElementById('filterType');
-    const searchInput = document.getElementById('searchInput');
-    const departmentSelect = document.getElementById('departmentSelect');
-    const dateInputs = document.getElementById('dateInputs');
-
-    filterType.addEventListener('change', function () {
-      // Hide all by default
-      searchInput.classList.remove('hidden');
-      departmentSelect.classList.add('hidden');
-      dateInputs.classList.add('hidden');
-
-      if (this.value === 'department') {
-        searchInput.classList.add('hidden');
-        departmentSelect.classList.remove('hidden');
-      }
-      else if (this.value === 'training_date') {
-        searchInput.classList.add('hidden');
-        dateInputs.classList.remove('hidden');
-      }
-      else if (this.value === 'due') {
-        searchInput.classList.add('hidden');
-        document.getElementById('searchForm').submit();
-      }
-    });
-
-    // Navigation menu toggle
-    document.querySelector('.menu-btn').addEventListener('click', function () {
-      document.querySelector('.menu-content').classList.toggle('hidden');
-    });
-
-    // Download table data as CSV
-    document.getElementById('downloadBtn').addEventListener('click', function (e) {
-      e.preventDefault();
-
-      const table = document.querySelector("#results table");
-      if (!table) {
-        alert("No data to download.");
-        return;
-      }
-
-      let csv = [];
-      const rows = table.querySelectorAll("tr");
-
-      rows.forEach(row => {
-        const cols = row.querySelectorAll("th, td");
-        const rowData = [];
-        cols.forEach(col => rowData.push('"' + col.innerText.replace(/"/g, '""') + '"'));
-        csv.push(rowData.join(","));
-      });
-
-      const blob = new Blob([csv.join("\n")], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-
-      const a = document.createElement("a");
-      a.setAttribute("href", url);
-      a.setAttribute("download", "results.csv");
-      a.click();
-      window.URL.revokeObjectURL(url);
-    });
-  </script>
 </body>
 </html>
