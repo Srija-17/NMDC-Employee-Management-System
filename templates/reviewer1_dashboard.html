@@ -64,7 +64,7 @@
         </button>
         <div class="menu-content hidden">
           <a href="#" id="downloadBtn">Download</a>
-          <a href="#" id="verifyBtn">Verification</a>
+          <a href="{{ url_for('verification') }}" id="verifyBtn">Verification</a>
           <a href="{{ url_for('add_trainee') }}" id="listBtn">Add Trainee</a>
           <a href="{{ url_for('logout') }}" id="logoutBtn">Logout</a>
         </div>

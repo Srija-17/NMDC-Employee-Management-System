@@ -6,6 +6,15 @@ import io
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
+# Global status map for all templates
+app.jinja_env.globals['status_map'] = {
+    0: "Not Verified",
+    1: "Verified",
+    2: "Verified by R2",
+    -1: "Rejected by R1",
+    -2: "Rejected by R2"
+}
+
 # MySQL connection
 conn = pymysql.connect(
     host='localhost',
@@ -143,8 +152,15 @@ def manage_training():
     search_value = request.args.get('search_value')
 
     if filter_type and search_value:
-        if filter_type in ["emp_name", "emp_id", "sap_id", "training_name", "training_id"]:
-            table_alias = 'e.' if filter_type.startswith('emp') or filter_type == 'sap_id' else 't.'
+        if filter_type in ["emp_id", "sap_id"]:
+            # Exact match for emp_id and sap_id
+            query += f" AND e.{filter_type} = %s"
+        elif filter_type in ["emp_name", "training_name", "training_id"]:
+            # Partial match for others
+            if filter_type.startswith('emp'):
+                table_alias = 'e.'
+            else:
+                table_alias = 't.'
             query += f" AND {table_alias}{filter_type} LIKE %s"
             search_value = f"%{search_value}%"
 
@@ -163,6 +179,7 @@ def manage_training():
         results=results,
         user=session.get('username')
     )
+
 @app.route('/update_training_bulk', methods=['POST'])
 def update_training_bulk():
     data = request.json
@@ -405,7 +422,160 @@ def check_employee(emp_id):
     cursor = conn.cursor()
     cursor.execute("SELECT emp_id FROM employee WHERE emp_id = %s", (emp_id,))
     result = cursor.fetchone()
+    cursor.close()
     return {"exists": bool(result)}
+
+@app.route('/verification', methods=['GET'])
+def verification():
+    verification_filter = request.args.get('filter', 'all')
+
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+    base_query = """
+        SELECT e.emp_id, e.emp_name, e.designation, d.dept_name,
+               t.training_id, t.training_name,
+               tr.scheduled_date, tr.joining_date, tr.completion_date,
+               tr.verification
+        FROM employee e
+        JOIN department d ON e.dept_id = d.dept_id
+        JOIN trainee tr ON e.emp_id = tr.emp_id
+        JOIN training t ON tr.training_id = t.training_id
+    """
+
+    if verification_filter == 'verified':
+        base_query += " WHERE tr.verification = 1"
+    elif verification_filter == 'not_verified':
+        base_query += " WHERE tr.verification = 0"
+    elif verification_filter == 'rejected':
+        base_query += " WHERE tr.verification = -1"
+    else:  # default 'all'
+        base_query += " WHERE tr.verification IN (0, 1, -1)"
+
+    cursor.execute(base_query)
+    data = cursor.fetchall()
+
+    status_map = {
+        0: "Not Verified",
+        1: "Verified",
+        -1: "Rejected"
+    }
+
+    return render_template(
+        'verification.html',
+        data=data,
+        status_map=status_map,
+        current_filter=verification_filter
+    )
+
+@app.route('/verification/update', methods=['POST'])
+def verification_update():
+    certificate_id = request.form.get('certificate_id')
+    new_status = int(request.form.get('new_status'))
+
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE verification_status
+        SET verification_status = %s
+        WHERE certificate_id = %s
+    """, (new_status, certificate_id))
+    conn.commit()
+    cursor.close()
+
+    return jsonify({
+        'success': True,
+        'new_status_map': app.jinja_env.globals['status_map'].get(new_status, 'Unknown')
+    })
+
+
+@app.route('/trainee_verification', methods=['GET'])
+def trainee_verification():
+    # require login
+    if 'username' not in session:
+        return redirect(url_for('login'))  # adjust to your login route
+
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
+
+    username = session['username']
+    cursor.execute("SELECT role FROM user WHERE username = %s", (username,))
+    u = cursor.fetchone()
+    role = u['role'] if u else 'admin'   # fallback to admin if missing (adjust as needed)
+
+    # Mapping keys used in the dropdown (human labels only in HTML)
+    status_map = {
+        'not_verified': 0,
+        'verified': 1,
+        'rejected': -1
+    }
+
+    sel_key = request.args.get('status')  # values: 'not_verified', 'verified', 'rejected' or None
+
+    base_query = """
+        SELECT
+            tn.emp_id,
+            e.emp_name,
+            tn.training_id,
+            tr.training_name,
+            tn.scheduled_date,
+            tn.joining_date,
+            tn.completion_date,
+            tn.verification
+        FROM trainee tn
+        JOIN employee e ON tn.emp_id = e.emp_id
+        JOIN training tr ON tn.training_id = tr.training_id
+        WHERE 1=1
+    """
+    params = []
+
+    # Enforce role rules:
+    if role == 'reviewer_two':
+        # reviewer_two always sees only verified (1)
+        base_query += " AND tn.verification = %s"
+        params.append(1)
+        # ignore any sel_key from UI
+        effective_key = 'verified'
+    else:
+        # reviewer_one and admin:
+        if sel_key in status_map:
+            base_query += " AND tn.verification = %s"
+            params.append(status_map[sel_key])
+            effective_key = sel_key
+        else:
+            # default page view: show only 0, 1, -1
+            base_query += " AND tn.verification IN (0, 1, -1)"
+            effective_key = ''  # means All (the dropdown will show "All")
+
+    base_query += " ORDER BY tn.emp_id ASC"
+
+    cursor.execute(base_query, tuple(params))
+    rows = cursor.fetchall()
+    cursor.close()
+
+    return render_template(
+        'trainee_verification.html',
+        data=rows,
+        role=role,
+        selected_key=effective_key  # used to mark dropdown
+    )
+@app.route('/verification/update_bulk', methods=['POST'])
+def verification_update_bulk():
+    updates = request.get_json()
+    if not updates:
+        return jsonify({"success": False, "error": "No updates received"})
+
+    try:
+        cursor = conn.cursor()
+        for key, status in updates.items():
+            emp_id, training_id = key.split("_")
+            cursor.execute("""
+                UPDATE trainee
+                SET verification = %s
+                WHERE emp_id = %s AND training_id = %s
+            """, (status, emp_id, training_id))
+        conn.commit()
+        cursor.close()
+        return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 @app.route('/reviewer2')
 def reviewer2():
