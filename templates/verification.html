@@ -6,7 +6,26 @@
     <style>
         table, th, td { border: 1px solid black; border-collapse: collapse; padding: 5px;}
         button { margin: 2px; cursor: pointer; }
-    </style>
+        <style>
+.btn-accept.active {
+    background-color: green;
+    color: white;
+}
+
+.btn-reject.active {
+    background-color: rgb(202, 49, 49);
+    color: white;
+}
+.btn-accept.active {
+    background-color: green;
+    color: white;
+}
+
+.btn-reject.active {
+    background-color: rgb(202, 49, 49);
+    color: white;
+}
+</style>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/trainee_verification.css') }}">
     <script>
         let changes = {};
@@ -98,6 +117,23 @@
             {% endfor %}
         </table>
     </div>
+    <script>
+document.addEventListener("DOMContentLoaded", function () {
+    // For all Accept buttons
+    document.querySelectorAll(".btn-accept").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            btn.classList.toggle("active");
+        });
+    });
+
+    // For all Reject buttons
+    document.querySelectorAll(".btn-reject").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            btn.classList.toggle("active");
+        });
+    });
+});
+</script>
 </body>
 
 </html>
