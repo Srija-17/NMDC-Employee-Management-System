@@ -11,7 +11,7 @@ body {
 
 .navbar {
   background: #2c3e50;
-  color: black;
+  color: whitesmoke;
   padding: 5px 20px;
   display: flex;
   justify-content: space-between;
@@ -27,6 +27,8 @@ body {
 }
 
 .nav-logo {
+  background-color: white; 
+  padding: 5px;
   height: 45px;
   width: auto;
   margin-right: 10px;
