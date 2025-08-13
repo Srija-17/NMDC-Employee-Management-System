@@ -1,80 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8" />
-<title>Verification Page</title>
+  <meta charset="UTF-8" />
+  <title>Verification Page</title>
 
-<!-- External CSS -->
+  <!-- External CSS -->
 
-<script>
-  async function updateStatus(certificateId, newStatus) {
-    try {
-      const formData = new FormData();
-      formData.append('certificate_id', certificateId);
-      formData.append('new_status', newStatus);
+  <script>
+    async function updateStatus(certificateId, newStatus) {
+      try {
+        const formData = new FormData();
+        formData.append('certificate_id', certificateId);
+        formData.append('new_status', newStatus);
 
-      const response = await fetch('/verification/update', {
-        method: 'POST',
-        body: formData
-      });
+        const response = await fetch('/verification/update', {
+          method: 'POST',
+          body: formData
+        });
 
-      const result = await response.json();
-      if (result.success) {
-        const statusCell = document.querySelector(`#status-${certificateId}`);
-        statusCell.textContent = result.new_status_map;
-      } else {
-        alert('Failed to update: ' + (result.error || 'Unknown error'));
+        const result = await response.json();
+        if (result.success) {
+          const statusCell = document.querySelector(`#status-${certificateId}`);
+          statusCell.textContent = result.new_status_map;
+        } else {
+          alert('Failed to update: ' + (result.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('Error: ' + err);
       }
-    } catch (err) {
-      alert('Error: ' + err);
     }
-  }
-</script>
+  </script>
 </head>
-<body>
-<h2>Verification List</h2>
 
-<form method="get" action="{{ url_for('trainee_verification') }}">
+<body>
+  <h2>Verification List</h2>
+
+  <form method="get" action="{{ url_for('trainee_verification') }}">
     <label for="status">Filter by Verification Status:</label>
     <select name="status" id="status" onchange="this.form.submit()">
-        <option value="">All</option>
-        {% for code, label in status_map.items() %}
-          <option value="{{ code }}" {% if selected_status == code|string %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
+      <option value="">All</option>
+      {% for code, label in status_map.items() %}
+      <option value="{{ code }}" {% if selected_status==code|string %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
     </select>
-</form>
+  </form>
 
-<table>
-  <thead>
-    <tr>
-      <th>Certificate ID</th>
-      <th>Employee ID</th>
-      <th>Employee Name</th>
-      <th>Training ID</th>
-      <th>Training Name</th>
-      <th>Status</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for row in data %}
-    <tr>
-      <td>{{ row.certificate_id }}</td>
-      <td>{{ row.emp_id }}</td>
-      <td>{{ row.emp_name }}</td>
-      <td>{{ row.training_id }}</td>
-      <td>{{ row.training_name }}</td>
-      <td id="status-{{ row.certificate_id }}">{{ status_map[row.verification_status] }}</td>
-      <td>
-        <button onclick="updateStatus({{ row.certificate_id }}, 1)">Accept</button>
-        <button onclick="updateStatus({{ row.certificate_id }}, -1)">Reject</button>
-      </td>
-    </tr>
-    {% else %}
-    <tr><td colspan="7">No verification records to show</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
+  <table>
+    <thead>
+      <tr>
+        <th>Certificate ID</th>
+        <th>Employee ID</th>
+        <th>Employee Name</th>
+        <th>Training ID</th>
+        <th>Training Name</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in data %}
+      <tr>
+        <td>{{ row.certificate_id }}</td>
+        <td>{{ row.emp_id }}</td>
+        <td>{{ row.emp_name }}</td>
+        <td>{{ row.training_id }}</td>
+        <td>{{ row.training_name }}</td>
+        <td id="status-{{ row.certificate_id }}">{{ status_map[row.verification_status] }}</td>
+        <td>
+          <button onclick="updateStatus('{{ row.certificate_id }}', 1)">Accept</button>
+          <button onclick="updateStatus('{{ row.certificate_id }}', -1)">Reject</button>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="7">No verification records to show</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
 </body>
+
 </html>
